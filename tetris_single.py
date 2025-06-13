@@ -1,10 +1,29 @@
 import pygame
 import random
 import sys
-import time
 import os
 import numpy as np
 import moderngl
+
+S_CURSOR_SHAPE = [
+    [1, 0],
+    [1, 1],
+    [0, 1]
+]
+
+def draw_s_cursor(surface, pos, size=32):
+    x, y = pos
+    block_color = GB_BLOCK
+    border_color = (0, 0, 0)
+    rows = len(S_CURSOR_SHAPE)
+    cols = len(S_CURSOR_SHAPE[0])
+    cell_size = size // max(rows, cols)
+    for row in range(rows):
+        for col in range(cols):
+            if S_CURSOR_SHAPE[row][col]:
+                rect = pygame.Rect(x + col*cell_size, y + row*cell_size, cell_size, cell_size)
+                pygame.draw.rect(surface, block_color, rect)
+                pygame.draw.rect(surface, border_color, rect, 2)
 
 def show_bios_intro():
     bios_lines = [
@@ -127,10 +146,9 @@ def resource_path(relative_path):
 
 
 pygame.init()
+pygame.mouse.set_visible(False)
 pygame.mixer.init()
 try:
-    pygame.mixer.music.load(resource_path("theme.mp3"))
-    pygame.mixer.music.play(-1)
     drop_sound = pygame.mixer.Sound(resource_path("drop.mp3"))
     clear_sound = pygame.mixer.Sound(resource_path("clear.mp3"))
 except Exception as e:
@@ -373,7 +391,6 @@ def _add_glitch_effect(height, width, glitch_surface, intensity):
         y_start = random.randint(0, height - 20)
         slice_height = random.randint(5, 20)
         offset = random.randint(-shift_amount, shift_amount)
-
         slice_area = pygame.Rect(0, y_start, width, slice_height)
         slice_copy = glitch_surface.subsurface(slice_area).copy()
         glitch_surface.blit(slice_copy, (offset, y_start))
@@ -395,7 +412,9 @@ class Game:
     def __init__(self):
         self.reset_game()
         self.hold_block = None
-        self.hold_used = False 
+        self.hold_used = False
+        self.shake_frames = 0
+        self.shake_offset = (0, 0) 
         
     def reset_game(self):
         self.grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
@@ -491,6 +510,7 @@ class Game:
         self.current_block = self.next_block
         self.next_block = self.new_block()
         self.hold_used = False
+        self.shake_frames = 3
         
         if not self.valid_move(self.current_block):
             self.game_over = True
@@ -719,6 +739,14 @@ class Game:
 
 
     def draw(self, margin_left, margin_top, show_current_block=True):
+        shake_x, shake_y = 0, 0
+        if getattr(self, 'shake_frames', 0) > 0:
+            shake_x = random.randint(-6, 6)
+            shake_y = random.randint(-6, 6)
+            self.shake_frames -= 1
+        margin_left += shake_x
+        margin_top += shake_y
+
         screen.fill(WHITE)
         border_width = 10
         pygame.draw.rect(screen, BLACK, [margin_left - border_width, margin_top, border_width, GRID_HEIGHT * GRID_SIZE])
@@ -749,6 +777,9 @@ class Game:
         _add_rolling_static(screen, screen.get_height(), screen.get_width(), "minimum")
         render_fisheye_gl(fisheye_ctx, fisheye_prog, fisheye_vao, fisheye_texture, screen, distortion=0.15)
 
+        draw_s_cursor(screen, pygame.mouse.get_pos())
+
+        
 
 
     def draw_next_block(self, margin_left, margin_top):
@@ -921,6 +952,7 @@ def draw_pause():
     resume_button.draw(screen)
     pause_quit_button.draw(screen)
     pause_restart_button.draw(screen)
+    draw_s_cursor(screen, pygame.mouse.get_pos())
 
     _apply_scanlines(screen)
     _apply_pixelation(screen, "minimum")
@@ -942,6 +974,7 @@ def draw_menu():
     start_button.draw(screen)
     options_button.draw(screen)
     quit_button.draw(screen)
+    draw_s_cursor(screen, pygame.mouse.get_pos())
 
     _apply_scanlines(screen)
     _apply_pixelation(screen, "minimum")
@@ -966,6 +999,7 @@ def draw_game_over(score):
     
     restart_button.draw(screen)
     menu_button.draw(screen)
+    draw_s_cursor(screen, pygame.mouse.get_pos())
 
     _apply_scanlines(screen)
     _apply_pixelation(screen, "minimum")
@@ -1054,6 +1088,7 @@ def draw_options():
     screen.blit(theme_name, theme_name_rect)
     theme_left_button.draw(screen)
     theme_right_button.draw(screen)
+    draw_s_cursor(screen, pygame.mouse.get_pos())
 
     _apply_scanlines(screen)
     _apply_pixelation(screen, "minimum")
@@ -1149,4 +1184,9 @@ def main():
 
 if __name__ == "__main__":
     show_bios_intro()
+    try:
+        pygame.mixer.music.load(resource_path("theme.mp3"))
+        pygame.mixer.music.play(-1)
+    except Exception as e:
+        print("Cannot load music:", e)
     main()
