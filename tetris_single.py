@@ -6,7 +6,37 @@ import os
 import numpy as np
 import moderngl
 
-# --- OpenGL Fisheye Shader Setup ---
+def show_bios_intro():
+    bios_lines = [
+        "Phoenix Technologies Ltd.",
+        "Copyright (C) 1985-2001",
+        "",
+        "BIOS Version 4.51 PG",
+        "CPU = Intel(R) Pentium(R) III 1000MHz",
+        "Memory Test : 524288K OK",
+        "",
+        "Detecting IDE Primary Master ... TETRIS",
+        "Detecting IDE Primary Slave  ... None",
+        "Detecting IDE Secondary Master ... None",
+        "Detecting IDE Secondary Slave  ... None",
+        "",
+        "Press DEL to enter SETUP",
+        "",
+        "Boot from CD-ROM:",
+        "Starting TETRIS.EXE ..."
+    ]
+    screen.fill((0, 0, 0))
+    font = pygame.font.SysFont("consolas", 32)
+    y = 120
+    for line in bios_lines:
+        text = font.render(line, True, (30, 100, 30))
+        screen.blit(text, (80, y))
+        render_fisheye_gl(fisheye_ctx, fisheye_prog, fisheye_vao, fisheye_texture, screen, distortion=0.15)
+        pygame.display.flip()
+        y += 38
+        pygame.time.delay(350)
+    pygame.time.delay(1200)
+
 FISHEYE_VERTEX_SHADER = '''
     #version 330
     in vec2 vert;
@@ -46,7 +76,7 @@ FISHEYE_FRAGMENT_SHADER = '''
             color = texture(Texture, texcoord);
         }
 
-        // Vignette (ciemniejsze rogi)
+        // Vignette
         float vignette = smoothstep(0.8, 0.2, length(curved));
         color.rgb *= vignette;
 
@@ -88,14 +118,14 @@ def render_fisheye_gl(ctx, prog, vao, texture, surface, distortion=0.08):
 
 def resource_path(relative_path):
     try:
-        base_path = sys._MEIPASS  # PyInstaller ustawia tę zmienną
+        base_path = sys._MEIPASS  
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
 
 
-# Inicjalizacja
+
 pygame.init()
 pygame.mixer.init()
 try:
@@ -108,7 +138,7 @@ except Exception as e:
     drop_sound = None 
     clear_sound = None 
 
-# Czcionki
+
 try:
     tetris_font_path = resource_path("Tetris.ttf")
     title_font = pygame.font.Font(tetris_font_path, 100)
@@ -119,7 +149,7 @@ except Exception:
     menu_font = pygame.font.SysFont('comicsans', 50)
     score_font = pygame.font.SysFont('comicsans', 30)
 
-# Stałe
+
 GRID_SIZE = 56
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
@@ -128,30 +158,144 @@ info = pygame.display.Info()
 SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h
 
-# Kolory
-GB_BG      = (220, 200, 255)   # Jasny fiolet (tło)
-GB_GRID    = (120, 80, 180)    # Ciemny fiolet (kratka)
-GB_BLOCK   = (180, 120, 220)   # Fiolet (klocki)
-GB_ACCENT  = (70, 30, 100)     # Najciemniejszy fiolet (obramowania, tekst)
-RED        = GB_ACCENT
-
-WHITE = GB_BG
-BLACK = GB_ACCENT
-GRAY = GB_GRID
-DARK_GRAY = GB_ACCENT
-HIGHLIGHT = GB_BLOCK
-
-COLORS = [
-    (180, 120, 220),  # I - jasny fiolet
-    (160, 100, 200),  # O - średni fiolet
-    (140, 80, 180),   # T - ciemniejszy fiolet
-    (200, 140, 240),  # L - różowawy fiolet
-    (120, 60, 160),   # J - głęboki fiolet
-    (170, 110, 210),  # S - pastelowy fiolet
-    (150, 90, 190),   # Z - klasyczny fiolet
+THEMES = [
+    {
+        "name": "Green",
+        "GB_BG": (200, 255, 200),
+        "GB_GRID": (80, 180, 80),
+        "GB_BLOCK": (120, 220, 120),
+        "GB_ACCENT": (30, 100, 30),
+        "COLORS": [
+            (120, 220, 120),
+            (100, 200, 100),
+            (80, 180, 80),
+            (140, 240, 140),
+            (60, 160, 60),
+            (110, 210, 110),
+            (90, 190, 90),
+        ]
+    },
+    {
+        "name": "Purple",
+        "GB_BG": (220, 200, 255),
+        "GB_GRID": (120, 80, 180),
+        "GB_BLOCK": (180, 120, 220),
+        "GB_ACCENT": (70, 30, 100),
+        "COLORS": [
+            (180, 120, 220),
+            (160, 100, 200),
+            (140, 80, 180),
+            (200, 140, 240),
+            (120, 60, 160),
+            (170, 110, 210),
+            (150, 90, 190),
+        ]
+    },
+    {
+        "name": "Classic",
+        "GB_BG": (30, 30, 30),      
+        "GB_GRID": (60, 60, 60),    
+        "GB_BLOCK": (255, 255, 255), 
+        "GB_ACCENT": (0, 0, 0),     
+        "COLORS": [
+            (0, 255, 255),   
+            (255, 255, 0),   
+            (128, 0, 128),   
+            (255, 165, 0),   
+            (0, 0, 255),     
+            (0, 255, 0),     
+            (255, 0, 0),     
+        ]
+    },
+    {
+        "name": "Neon",
+        "GB_BG": (10, 10, 30),        
+        "GB_GRID": (40, 0, 60),       
+        "GB_BLOCK": (255, 20, 147),   
+        "GB_ACCENT": (0, 255, 255),   
+        "COLORS": [
+            (0, 255, 255),    
+            (255, 255, 0),    
+            (255, 20, 147),   
+            (255, 140, 0),    
+            (0, 191, 255),    
+            (57, 255, 20),    
+            (255, 0, 70),     
+        ]   
+    },
+    {
+        "name": "Pastel",
+        "GB_BG": (245, 239, 255),      
+        "GB_GRID": (200, 180, 220),    
+        "GB_BLOCK": (255, 220, 240),   
+        "GB_ACCENT": (120, 160, 200),  
+        "COLORS": [
+            (255, 182, 193),   
+            (255, 255, 153),   
+            (186, 225, 255),   
+            (255, 204, 153),   
+            (204, 255, 204),   
+            (204, 204, 255),   
+            (255, 204, 229),   
+        ]
+    },
+    {
+        "name": "Candy",
+        "GB_BG": (255, 248, 220),      
+        "GB_GRID": (255, 182, 193),    
+        "GB_BLOCK": (255, 240, 245),   
+        "GB_ACCENT": (255, 105, 180),  
+        "COLORS": [
+            (255, 105, 180),   
+            (255, 255, 102),   
+            (102, 204, 255),   
+            (255, 153, 102),   
+            (186, 255, 201),   
+            (204, 153, 255),   
+            (255, 153, 204),   
+        ]
+    },
 ]
+current_theme_idx = 0
 
-# Kształty klocków
+def apply_theme(idx):
+    global GB_BG, GB_GRID, GB_BLOCK, GB_ACCENT, RED, WHITE, BLACK, GRAY, DARK_GRAY, HIGHLIGHT, COLORS
+    theme = THEMES[idx]
+    GB_BG = theme["GB_BG"]
+    GB_GRID = theme["GB_GRID"]
+    GB_BLOCK = theme["GB_BLOCK"]
+    GB_ACCENT = theme["GB_ACCENT"]
+    RED = GB_ACCENT
+    WHITE = GB_BG
+    BLACK = GB_ACCENT
+    GRAY = GB_GRID
+    DARK_GRAY = GB_ACCENT
+    HIGHLIGHT = GB_BLOCK
+    COLORS = theme["COLORS"]
+
+apply_theme(current_theme_idx)
+
+def rebuild_buttons():
+    global start_button, options_button, quit_button
+    global restart_button, menu_button
+    global resume_button, pause_restart_button, pause_quit_button
+    global back_button, theme_left_button, theme_right_button
+
+    start_button = Button(SCREEN_WIDTH//2 - 100, 360, 200, 50, "Start", GRAY, HIGHLIGHT)
+    options_button = Button(SCREEN_WIDTH//2 - 100, 470, 200, 50, "Options", GRAY, HIGHLIGHT)
+    quit_button = Button(SCREEN_WIDTH//2 - 100, 580, 200, 50, "Quit", GRAY, HIGHLIGHT)
+
+    restart_button = Button(SCREEN_WIDTH//2 - 100, 350, 200, 50, "Play Again", GRAY, HIGHLIGHT)
+    menu_button = Button(SCREEN_WIDTH//2 - 100, 470, 200, 50, "Main Menu", GRAY, HIGHLIGHT)
+
+    resume_button = Button(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2, 200, 50, "Resume", GRAY, HIGHLIGHT)
+    pause_restart_button = Button(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 + 80, 200, 50, "Restart", GRAY, HIGHLIGHT)
+    pause_quit_button = Button(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 + 160, 200, 50, "Quit to Menu", GRAY, HIGHLIGHT)
+
+    back_button = Button(SCREEN_WIDTH//2 - 100, 670, 200, 50, "Back", GRAY, HIGHLIGHT)
+    theme_left_button = Button(SCREEN_WIDTH//2 - 250, 800, 60, 50, "<", GRAY, HIGHLIGHT)
+    theme_right_button = Button(SCREEN_WIDTH//2 + 200, 800, 60, 50, ">", GRAY, HIGHLIGHT)
+
 SHAPES = [
     [[1, 1, 1, 1]],  # I
     [[1, 1], [1, 1]],  # O
@@ -163,19 +307,18 @@ SHAPES = [
 ]
 
 # Konfiguracja ekranu
-screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.OPENGL | pygame.DOUBLEBUF)
+screen = pygame.display.get_surface()
 fisheye_ctx, fisheye_prog, fisheye_vao, fisheye_texture = setup_fisheye_gl((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 crt_image = pygame.image.load(resource_path("crt.png")).convert()
 crt_image = pygame.transform.scale(crt_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
-crt_image = pygame.transform.flip(crt_image, False, True)  # <-- odwrócenie w pionie
+crt_image = pygame.transform.flip(crt_image, False, True) 
 crt_texture = fisheye_ctx.texture((SCREEN_WIDTH, SCREEN_HEIGHT), 3, pygame.image.tostring(crt_image, "RGB"))
 crt_texture.build_mipmaps()
 
 clock = pygame.time.Clock()
 FPS = 60
-
 
 # Funkcja do dynamicznego centrowania planszy:
 def get_margins():
@@ -207,7 +350,6 @@ def _apply_scanlines(screen):
 def _apply_pixelation(screen, pixelation):
     pixelation = {"minimum": 2, "medium": 4, "maximum": 6}.get(pixelation, 2)
     width, height = screen.get_size()
-    # Zmniejsz obraz, a potem powiększ z powrotem, uzyskując efekt pikselizacji
     small_surf = pygame.transform.scale(screen, (width // pixelation, height // pixelation))
     screen.blit(pygame.transform.scale(small_surf, (width, height)), (0, 0))
 
@@ -237,14 +379,12 @@ def _add_glitch_effect(height, width, glitch_surface, intensity):
         glitch_surface.blit(slice_copy, (offset, y_start))
 
 def _add_rolling_static(screen, height, width, intensity):
-    # Zmniejsz szansę na pojawienie się linii i zwiększ odstęp
     static_chance = {"minimum": 0.03, "medium": 0.08, "maximum": 0.18}.get(intensity, 0.05)
     static_surface = pygame.Surface((width, height), pygame.SRCALPHA)
 
-    # Większy odstęp = mniej linii, np. co 24 piksele
     for y in range(0, height, 24):
         if random.random() < static_chance:
-            alpha = random.randint(8, 24)  # subtelniejsza przezroczystość
+            alpha = random.randint(8, 24)  
             color = (177, 177, 177, alpha)
             pygame.draw.line(static_surface, color, (0, y), (width, y))
 
@@ -294,9 +434,8 @@ class Game:
             self.current_block.shape = old_shape
     
     def hold_current_block(self):
-        # Pozwala na zamianę tylko raz na jeden klocek spadający
         if self.hold_used:
-            return  # Nie pozwól na kolejną zamianę w tej turze
+            return
 
         prev_x = self.current_block.x
         prev_y = self.current_block.y
@@ -312,14 +451,12 @@ class Game:
             self.next_block = self.new_block()
         else:
             temp = self.current_block
-            # Ustaw blok na środku planszy
             new_block = Block(
                 GRID_WIDTH // 2 - len(self.hold_block.shape[0]) // 2,
                 0,
                 [row[:] for row in self.hold_block.shape],
                 self.hold_block.color
             )
-            # Korekta pozycji w lewo/prawo jeśli blok wystaje poza planszę
             while not self.valid_move(new_block):
                 new_block.x -= 1
                 if new_block.x < 0:
@@ -334,7 +471,6 @@ class Game:
             )
         self.hold_used = True
 
-        # Dodatkowa korekta: jeśli po zamianie blok nadal wystaje, przesuń go w górę
         while not self.valid_move(self.current_block):
             self.current_block.y -= 1
             if self.current_block.y < 0:
@@ -354,7 +490,7 @@ class Game:
         self.clear_lines()
         self.current_block = self.next_block
         self.next_block = self.new_block()
-        self.hold_used = False  # Reset hold po zablokowaniu klocka
+        self.hold_used = False
         
         if not self.valid_move(self.current_block):
             self.game_over = True
@@ -362,9 +498,8 @@ class Game:
     def clear_lines(self):
         lines_to_clear = [i for i, row in enumerate(self.grid) if all(row)]
         if lines_to_clear:
-            # --- ANIMACJA MIGANIA ---
             blink_times = 4
-            blink_delay = 100  # ms
+            blink_delay = 100
             for blink in range(blink_times):
                 for i in lines_to_clear:
                     for x in range(GRID_WIDTH):
@@ -378,7 +513,6 @@ class Game:
 
         lines_cleared = len(lines_to_clear)
         if lines_cleared > 0:
-            # --- ODTWÓRZ DŹWIĘK ---
             try:
                 if clear_sound:
                     pygame.mixer.find_channel(True).play(clear_sound)
@@ -402,12 +536,10 @@ class Game:
                         if cell == color:
                             shape_id = idx
                             break
-                    # Tło klocka
                     pygame.draw.rect(screen, GB_GRID, (bx, by, GRID_SIZE, GRID_SIZE))
                     pygame.draw.rect(screen, cell, (bx+4, by+4, GRID_SIZE-8, GRID_SIZE-8))
                     pygame.draw.rect(screen, GB_BG, (bx+10, by+10, GRID_SIZE-20, GRID_SIZE-20))
                     pygame.draw.rect(screen, GB_ACCENT, (bx, by, GRID_SIZE, GRID_SIZE), 2)
-                    # Wzorki jak na Gameboyu
                     if shape_id == 0:  # I
                         pygame.draw.rect(screen, GB_ACCENT, (bx+8, by+8, GRID_SIZE-16, GRID_SIZE-16), 2)
                     elif shape_id == 1:  # O
@@ -431,11 +563,9 @@ class Game:
                         pygame.draw.rect(screen, GB_ACCENT, (bx+8, by+8, GRID_SIZE-16, GRID_SIZE-16), 1)
                         pygame.draw.line(screen, GB_ACCENT, (bx+4, by+8), (bx+GRID_SIZE-8, by+GRID_SIZE-8), 2)
                 else:
-                    # Puste pole z siatką
                     pygame.draw.rect(screen, GRAY, (bx, by, GRID_SIZE, GRID_SIZE), 1)
     
     def draw_block(self, block, margin_left, margin_top, x_offset=0, y_offset=0):
-        # Rozpoznaj typ klocka po oryginalnym shape (niezależnie od obrotu)
         def get_shape_id(shape):
             for idx, s in enumerate(SHAPES):
                 if len(shape) == len(s) and len(shape[0]) == len(s[0]):
@@ -456,11 +586,8 @@ class Game:
                     bx = margin_left + (block.x + x + x_offset) * GRID_SIZE
                     by = margin_top + (block.y + y + y_offset) * GRID_SIZE
 
-                    # Cień (na dole i prawo)
                     pygame.draw.rect(screen, (100, 70, 130), (bx+4, by+4, GRID_SIZE, GRID_SIZE), border_radius=6)
-                    # Główna bryła
                     pygame.draw.rect(screen, color, (bx, by, GRID_SIZE, GRID_SIZE), border_radius=6)
-                    # Gruba ramka
                     pygame.draw.rect(screen, GB_ACCENT, (bx, by, GRID_SIZE, GRID_SIZE), 4, border_radius=6)
 
         shape_id = get_shape_id(block.shape)
@@ -470,34 +597,32 @@ class Game:
                     bx = margin_left + (block.x + x + x_offset) * GRID_SIZE
                     by = margin_top + (block.y + y + y_offset) * GRID_SIZE
 
-                    # Tło klocka
                     pygame.draw.rect(screen, GB_GRID, (bx, by, GRID_SIZE, GRID_SIZE))
                     pygame.draw.rect(screen, GB_BLOCK, (bx+4, by+4, GRID_SIZE-8, GRID_SIZE-8))
                     pygame.draw.rect(screen, GB_BG, (bx+10, by+10, GRID_SIZE-20, GRID_SIZE-20))
                     pygame.draw.rect(screen, GB_ACCENT, (bx, by, GRID_SIZE, GRID_SIZE), 2)
 
-                    # --- WZORKI JAK NA GAMEBOYU ---
-                    # I, O, T, L, J, S, Z
-                    if shape_id == 0:  # I - kwadrat w kwadracie
+
+                    if shape_id == 0: 
                         pygame.draw.rect(screen, GB_ACCENT, (bx+8, by+8, GRID_SIZE-16, GRID_SIZE-16), 2)
-                    elif shape_id == 1:  # O - podwójna ramka
+                    elif shape_id == 1: 
                         pygame.draw.rect(screen, GB_ACCENT, (bx+6, by+6, GRID_SIZE-12, GRID_SIZE-12), 2)
                         pygame.draw.rect(screen, GB_ACCENT, (bx+12, by+12, GRID_SIZE-24, GRID_SIZE-24), 1)
-                    elif shape_id == 2:  # T - kwadrat + kropka
+                    elif shape_id == 2: 
                         pygame.draw.rect(screen, GB_ACCENT, (bx+8, by+8, GRID_SIZE-16, GRID_SIZE-16), 1)
                         pygame.draw.circle(screen, GB_ACCENT, (bx+GRID_SIZE//2, by+GRID_SIZE//2), 3)
-                    elif shape_id == 3:  # L - kwadrat + L-ka
+                    elif shape_id == 3: 
                         pygame.draw.rect(screen, GB_ACCENT, (bx+8, by+8, GRID_SIZE-16, GRID_SIZE-16), 1)
                         pygame.draw.line(screen, GB_ACCENT, (bx+GRID_SIZE-8, by+GRID_SIZE-8), (bx+GRID_SIZE-8, by+GRID_SIZE//2), 2)
                         pygame.draw.line(screen, GB_ACCENT, (bx+GRID_SIZE-8, by+GRID_SIZE-8), (bx+GRID_SIZE//2, by+GRID_SIZE-8), 2)
-                    elif shape_id == 4:  # J - kwadrat + J-ka
+                    elif shape_id == 4: 
                         pygame.draw.rect(screen, GB_ACCENT, (bx+8, by+8, GRID_SIZE-16, GRID_SIZE-16), 1)
                         pygame.draw.line(screen, GB_ACCENT, (bx+8, by+GRID_SIZE-8), (bx+GRID_SIZE//2, by+GRID_SIZE-8), 2)
                         pygame.draw.line(screen, GB_ACCENT, (bx+8, by+GRID_SIZE-8), (bx+8, by+GRID_SIZE//2), 2)
-                    elif shape_id == 5:  # S - dwa rogi
+                    elif shape_id == 5:  
                         pygame.draw.rect(screen, GB_ACCENT, (bx+8, by+8, GRID_SIZE-16, GRID_SIZE-16), 1)
                         pygame.draw.line(screen, GB_ACCENT, (bx+4, by+GRID_SIZE-8), (bx+GRID_SIZE-8, by+8), 2)
-                    elif shape_id == 6:  # Z - dwa inne rogi
+                    elif shape_id == 6:  
                         pygame.draw.rect(screen, GB_ACCENT, (bx+8, by+8, GRID_SIZE-16, GRID_SIZE-16), 1)
                         pygame.draw.line(screen, GB_ACCENT, (bx+4, by+8), (bx+GRID_SIZE-8, by+GRID_SIZE-8), 2)
     
@@ -516,20 +641,16 @@ class Game:
         screen.blit(hold_text, text_rect)
 
         if self.hold_block:
-            # Zawsze domyślna orientacja!
-            # Znajdź shape_id na podstawie koloru lub shape
             shape_id = None
             for idx, s in enumerate(SHAPES):
                 if self.hold_block.shape == s:
                     shape_id = idx
                     break
             if shape_id is None:
-                # Jeśli shape nie pasuje, spróbuj po kolorze
                 for idx, color in enumerate(COLORS):
                     if self.hold_block.color == color:
                         shape_id = idx
                         break
-            # Użyj domyślnego shape z SHAPES
             base_shape = SHAPES[shape_id] if shape_id is not None else self.hold_block.shape
             block_width = len(base_shape[0]) * GRID_SIZE
             block_height = len(base_shape) * GRID_SIZE
@@ -554,9 +675,8 @@ class Game:
                         )
 
     def draw_board_gradient(self, margin_left, margin_top):
-        # Gradient od jasnego fioletu (góra) do ciemnego fioletu (dół)
-        top_color = (220, 200, 255)    # Jasny fiolet
-        bottom_color = (145, 120, 179)   # Ciemny fiolet
+        top_color = GB_BG   
+        bottom_color = GB_GRID   
 
         height = GRID_HEIGHT * GRID_SIZE
         for i in range(height):
@@ -573,28 +693,25 @@ class Game:
 
     
     def draw_left_panel(self, margin_left, margin_top):
-            # Panel boczny po lewej stronie planszy z instrukcją sterowania
             panel_x = margin_left - SIDEBAR_WIDTH
             panel_y = margin_top
             panel_w = SIDEBAR_WIDTH + 100
             panel_h = GRID_HEIGHT * GRID_SIZE
 
-            # Tło panelu i ramka
             pygame.draw.rect(screen, BLACK, (panel_x, panel_y, panel_w, panel_h), 3, border_radius=12)
 
-            # Instrukcja sterowania
             try:
                 controls_font = pygame.font.Font(tetris_font_path, 15)
             except Exception:
                 controls_font = pygame.font.SysFont('comicsans', 20)
             controls = [
-                "Sterowanie:",
-                "← →  - ruch w lewo/prawo",
-                "↓   -  szybciej w dół",
-                "↑   -  obrót klocka",
-                "Spacja - drop",
-                "Q   -  zamiana",
-                "ESC -  pauza"
+                "Controls:",
+                "← →  - move left/right",
+                "↓   -  move down faster",
+                "↑   -  rotate block",
+                "Space - hard drop",
+                "Q   -  hold",
+                "ESC -  pause"
             ]
             for i, line in enumerate(controls):
                 text = controls_font.render(line, True, BLACK)
@@ -614,7 +731,6 @@ class Game:
 
         pygame.draw.rect(screen, BLACK, [margin_left + GRID_WIDTH * GRID_SIZE, margin_top, SIDEBAR_WIDTH, GRID_HEIGHT * GRID_SIZE], 2, border_radius=12)
 
-        # Informacje
         score_text = score_font.render(f'Score: {self.score}', True, BLACK)
         level_text = score_font.render(f'Level: {self.level}', True, BLACK)
         lines_text = score_font.render(f'Lines: {self.lines_cleared}', True, BLACK)
@@ -638,16 +754,14 @@ class Game:
     def draw_next_block(self, margin_left, margin_top):
         font = pygame.font.Font(tetris_font_path, 28)
         next_text = font.render('Next', True, BLACK)
-        panel_x = margin_left + GRID_WIDTH * GRID_SIZE + 60  # większy margines z lewej
-        panel_y = margin_top + 200  # wyżej
-        panel_w = SIDEBAR_WIDTH - 100 # szerszy panel
-        panel_h = 150  # wyższy panel
+        panel_x = margin_left + GRID_WIDTH * GRID_SIZE + 60 
+        panel_y = margin_top + 200  
+        panel_w = SIDEBAR_WIDTH - 100 
+        panel_h = 150  
 
-        # Grubsza ramka wokół panelu "Next"
         pygame.draw.rect(screen, BLACK, (panel_x-16, panel_y-16, panel_w+32, panel_h+32), 2, border_radius=18)
         pygame.draw.rect(screen, WHITE, (panel_x, panel_y, panel_w, panel_h), 0, border_radius=14)
 
-        # Tekst wyśrodkowany
         text_rect = next_text.get_rect(center=(panel_x + panel_w//2, panel_y + 28))
         screen.blit(next_text, text_rect)
 
@@ -655,7 +769,6 @@ class Game:
         block_width = len(block.shape[0]) * GRID_SIZE
         block_height = len(block.shape) * GRID_SIZE
 
-        # Większy odstęp od napisu i większy margines od krawędzi
         y_offset = panel_y + 80 + (panel_h - 100 - block_height) // 2
         x_offset = panel_x + (panel_w - block_width) // 2
 
@@ -701,7 +814,7 @@ class Game:
                             self.reset_game()
                             paused = False
                             started = False
-                            break  # Restart gry, wyjdź z obsługi eventów
+                            break 
                         if pause_quit_button.is_clicked(pygame.mouse.get_pos(), event):
                             return 'menu'
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -770,7 +883,6 @@ class Button:
         )
 
     def draw(self, surface=None):
-        # Rysuj tylko przycisk, nie całą planszę!
         if surface is None:
             surface = screen
         color = self.hover_color if self.is_hovered else self.color
@@ -789,12 +901,10 @@ class Button:
             return self.rect.collidepoint(pos)
         return False
 
-# Przyciski menu
 start_button = Button(SCREEN_WIDTH//2 - 100, 360, 200, 50, "Start", GRAY, HIGHLIGHT)
 options_button = Button(SCREEN_WIDTH//2 - 100, 470, 200, 50, "Options", GRAY, HIGHLIGHT)
 quit_button = Button(SCREEN_WIDTH//2 - 100, 580, 200, 50, "Quit", GRAY, HIGHLIGHT)
 
-# Przyciski game over
 restart_button = Button(SCREEN_WIDTH//2 - 100, 350, 200, 50, "Play Again", GRAY, HIGHLIGHT)
 menu_button = Button(SCREEN_WIDTH//2 - 100, 470, 200, 50, "Main Menu", GRAY, HIGHLIGHT)
 
@@ -805,7 +915,7 @@ pause_quit_button = Button(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 + 160, 200, 5
 def draw_pause():
     screen.fill(WHITE)
     pause_font = pygame.font.Font(tetris_font_path, 80)
-    pause_text = pause_font.render('PAUZA', True, RED)
+    pause_text = pause_font.render('PAUSE', True, RED)
     pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100))
     screen.blit(pause_text, pause_rect)
     resume_button.draw(screen)
@@ -878,9 +988,7 @@ class Slider:
         self.handle_radius = 14
 
     def draw(self, surface):
-        # Linia suwaka
         pygame.draw.line(surface, DARK_GRAY, (self.x, self.y + self.height // 2), (self.x + self.width, self.y + self.height // 2), 6)
-        # Uchwyt
         handle_x = int(self.x + (self.value - self.min_val) / (self.max_val - self.min_val) * self.width)
         pygame.draw.circle(surface, HIGHLIGHT, (handle_x, self.y + self.height // 2), self.handle_radius)
         pygame.draw.circle(surface, BLACK, (handle_x, self.y + self.height // 2), self.handle_radius, 2)
@@ -903,21 +1011,22 @@ class Slider:
                 self.value = self.min_val + rel * (self.max_val - self.min_val)
                 pygame.mixer.music.set_volume(self.value)
 
-back_button = Button(SCREEN_WIDTH//2 - 100, 700, 200, 50, "Back", GRAY, HIGHLIGHT)
+back_button = Button(SCREEN_WIDTH//2 - 100, 670, 200, 50, "Back", GRAY, HIGHLIGHT)
 volume_slider = Slider(SCREEN_WIDTH//2 - 120, 350, 240, value=pygame.mixer.music.get_volume())
 drop_volume_slider = Slider(
     SCREEN_WIDTH//2 - 120, 550, 240,
     value=drop_sound.get_volume() if drop_sound else 1.0
 )
+theme_left_button = Button(SCREEN_WIDTH//2 - 250, 800, 60, 50, "<", GRAY, HIGHLIGHT)
+theme_right_button = Button(SCREEN_WIDTH//2 + 200, 800, 60, 50, ">", GRAY, HIGHLIGHT)
 
 def draw_options():
     screen.fill(WHITE)
-    title_text = title_font.render('Opcje', True, BLACK)
+    title_text = title_font.render('Options', True, BLACK)
     title_rect = title_text.get_rect(center=(SCREEN_WIDTH//2, 150))
     screen.blit(title_text, title_rect)
 
-    # Etykieta głośności muzyki
-    label = menu_font.render("Muzyka", True, BLACK)
+    label = menu_font.render("Music", True, BLACK)
     label_rect = label.get_rect(center=(SCREEN_WIDTH//2, 300))
     screen.blit(label, label_rect)
     volume_slider.draw(screen)
@@ -926,8 +1035,7 @@ def draw_options():
     percent_rect = percent_text.get_rect(center=(SCREEN_WIDTH//2, 400))
     screen.blit(percent_text, percent_rect)
 
-    # Etykieta głośności dźwięku drop
-    drop_label = menu_font.render("Dźwięk", True, BLACK)
+    drop_label = menu_font.render("Sound", True, BLACK)
     drop_label_rect = drop_label.get_rect(center=(SCREEN_WIDTH//2, 400))
     screen.blit(drop_label, (SCREEN_WIDTH//2 - drop_label.get_width()//2, 470))
     drop_volume_slider.draw(screen)
@@ -937,6 +1045,15 @@ def draw_options():
     screen.blit(drop_percent_text, drop_percent_rect)
 
     back_button.draw(screen)
+
+    theme_label = menu_font.render("Theme", True, BLACK)
+    theme_label_rect = theme_label.get_rect(center=(SCREEN_WIDTH//2, 800))
+    screen.blit(theme_label, theme_label_rect)
+    theme_name = score_font.render(THEMES[current_theme_idx]["name"], True, BLACK)
+    theme_name_rect = theme_name.get_rect(center=(SCREEN_WIDTH//2, 850))
+    screen.blit(theme_name, theme_name_rect)
+    theme_left_button.draw(screen)
+    theme_right_button.draw(screen)
 
     _apply_scanlines(screen)
     _apply_pixelation(screen, "minimum")
@@ -976,6 +1093,7 @@ def main():
             draw_menu()
 
         elif current_screen == 'options':
+            global current_theme_idx
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -983,9 +1101,7 @@ def main():
                 back_button.check_hover(mouse_pos)
                 volume_slider.handle_event(event)
                 drop_volume_slider.handle_event(event)
-                # Ustaw głośność muzyki na podstawie suwaka
-                pygame.mixer.music.set_volume(volume_slider.value)
-                # Ustaw głośność dźwięku drop na podstawie suwaka
+                pygame.mixer.music.set_volume(volume_slider.value)           
                 try:
                     if drop_sound:
                         drop_sound.set_volume(drop_volume_slider.value)
@@ -993,6 +1109,16 @@ def main():
                     pass
                 if back_button.is_clicked(mouse_pos, event):
                     current_screen = 'menu'
+                theme_left_button.check_hover(mouse_pos)
+                theme_right_button.check_hover(mouse_pos)
+                if theme_left_button.is_clicked(mouse_pos, event): 
+                    current_theme_idx = (current_theme_idx - 1) % len(THEMES)
+                    apply_theme(current_theme_idx)
+                    rebuild_buttons()
+                if theme_right_button.is_clicked(mouse_pos, event):
+                    current_theme_idx = (current_theme_idx + 1) % len(THEMES)
+                    apply_theme(current_theme_idx)
+                    rebuild_buttons()
             draw_options()
 
         elif current_screen == 'game':
@@ -1022,4 +1148,5 @@ def main():
         clock.tick(FPS)
 
 if __name__ == "__main__":
+    show_bios_intro()
     main()
